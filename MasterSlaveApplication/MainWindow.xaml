@@ -1,0 +1,99 @@
+﻿<Window x:Class="MasterSlaveApplication.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Хозяин" Height="305" Width="365.248" MinWidth="400" MinHeight="350">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="90"/>
+            <RowDefinition/>
+            <RowDefinition Height="60"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid Margin="10,9,12,0" Height="52" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Column="0" Grid.Row="0" Content="Задача" VerticalAlignment="Top" Height="26" Width="118" HorizontalAlignment="Left"/>
+            <TextBox Grid.Column="1" Grid.Row="0" Height="23" Text="{Binding TaskFileName,Mode=TwoWay}"  VerticalAlignment="Top" MaxLines="1"/>
+            <Button Grid.Column="2" Grid.Row="0" x:Name="ChooseTaskButton" VerticalAlignment="Top" Height="24" BorderBrush="{x:Null}" Width="26" Click="ChooseTaskButton_Click" HorizontalAlignment="Right">
+                <Button.Foreground>
+                    <SolidColorBrush Color="#00000000" Opacity="0"/>
+                </Button.Foreground>
+                <Button.Background>
+                    <LinearGradientBrush EndPoint="0,1" StartPoint="0,0" Opacity="0">
+                        <GradientStop Color="#FFF3F3F3" Offset="0"/>
+                        <GradientStop Color="#FFEBEBEB" Offset="0.5"/>
+                        <GradientStop Color="#FFDDDDDD" Offset="0.5"/>
+                        <GradientStop Color="#FFCDCDCD" Offset="1"/>
+                    </LinearGradientBrush>
+                </Button.Background>
+                <Image Source="folder-outline-filled.png"/>
+            </Button>
+            <Label Grid.Row="1" Grid.Column="0" Content="Исходные данные" VerticalAlignment="Top" Height="26" Width="118" HorizontalAlignment="Left"/>
+            <TextBox Grid.Row="1" Grid.Column="1" Width="Auto" Height="23" VerticalAlignment="Top" Text="{Binding InputFileName, Mode=TwoWay}" HorizontalContentAlignment="Stretch" MaxLines="1"/>
+            <Button Grid.Row="1" Grid.Column="2" x:Name="ChooseInputButton" VerticalAlignment="Top" Height="24" BorderBrush="{x:Null}" Width="26" Click="ChooseInputButton_Click" HorizontalContentAlignment="Center" HorizontalAlignment="Right">
+                <Button.Foreground>
+                    <SolidColorBrush Color="#00000000" Opacity="0"/>
+                </Button.Foreground>
+                <Button.Background>
+                    <LinearGradientBrush EndPoint="0,1" StartPoint="0,0" Opacity="0">
+                        <GradientStop Color="#FFF3F3F3" Offset="0"/>
+                        <GradientStop Color="#FFEBEBEB" Offset="0.5"/>
+                        <GradientStop Color="#FFDDDDDD" Offset="0.5"/>
+                        <GradientStop Color="#FFCDCDCD" Offset="1"/>
+                    </LinearGradientBrush>
+                </Button.Background>
+                <Image Source="folder-outline-filled.png"/>
+            </Button>
+        </Grid>
+        <ListView ItemsSource="{Binding Path=Slaves}"  x:Name="ServerListView" Height="Auto" Margin="10,8" Grid.Row="1">
+            <ListView.View>
+                <GridView>
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}">
+                            <Setter Property="Visibility"
+    							Value="Collapsed"/>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
+                    <GridViewColumn>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox Margin="0"
+    								VerticalAlignment="Center"
+    								IsChecked="{Binding Path=isChoosen,Mode=TwoWay}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Margin="0"
+    								Text="{Binding Path=IP,Mode=TwoWay}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <Button x:Name="DiscoverWorkersButton" Content="Поиск работников" Margin="0,66,0,0" VerticalAlignment="Top" Height="22" Click="DiscoverWorkersButton_Click" HorizontalAlignment="Center" Width="154"/>
+        <Button x:Name="ExecuteLocalButton" Content="Выполнить локально" HorizontalAlignment="Left" Margin="10,3,0,0" VerticalAlignment="Top" Width="133" Height="22" Click="ExecuteLocalButton_Click" Grid.Row="2"/>
+        <Button x:Name="ExecuteOnWorkersButton" Content="Выполнить на работниках" HorizontalAlignment="Right" Margin="0,3,12,0" VerticalAlignment="Top" Width="153" Height="22" Click="ExecuteOnWorkersButton_Click" Grid.Row="2"/>
+        <Label Content="Лог" HorizontalAlignment="Left" Margin="10,34,0,0" VerticalAlignment="Top" Height="26" Width="30" RenderTransformOrigin="0.4,-0.731" Grid.Row="2"/>
+
+        <ListBox x:Name="logListBox" ItemsSource="{Binding LogMessages}" Height="Auto" Margin="10,8" Grid.Row="3" VerticalContentAlignment="Stretch">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</Window>
