@@ -123,7 +123,7 @@ namespace SlaveApplication
             executeTask(tcpClient,taskData, BitConverter.ToString(inputData),workerNumber,workerCount);
             tcpClient.Close();
         }
-        void executeTask(TcpClient tcpClient,byte[] taskData, string data,int workerNumber, int workersCount)
+        void executeTask(TcpClient tcpClient,byte[] taskData, string inputString,int workerNumber, int workersCount)
         {
             AppDomain appDomain = null;
             try
@@ -131,8 +131,13 @@ namespace SlaveApplication
                 appDomain = AppDomain.CreateDomain("TaskDomain");
                 Assembly assm = appDomain.Load(taskData);
                 Type t = assm.GetExportedTypes()[1];
-                dynamic taskObject = Activator.CreateInstance(t);
-                byte[] output=taskObject.execute(taskObject.parseData(data),workerNumber,workersCount);
+                MethodInfo validate = t.GetMethod("validate");
+                MethodInfo execute = t.GetMethod("execute");
+                MethodInfo parseData = t.GetMethod("parseData");
+                MethodInfo showResults = t.GetMethod("showResults");
+                validate.Invoke(null, new object[] { inputString });
+                object data = parseData.Invoke(null, new object[] { inputString });
+                byte[] output = (byte[])execute.Invoke(null, new object[] { data, workerNumber, workersCount });
                 Log("Задание выполнено.");
                 sendOutput(tcpClient.GetStream(), output);
                 Log("Результаты отправлены назад.");

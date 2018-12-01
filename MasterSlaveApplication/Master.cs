@@ -112,7 +112,11 @@ namespace MasterSlaveApplication
                 MethodInfo execute = t.GetMethod("execute");
                 MethodInfo parseData = t.GetMethod("parseData");
                 MethodInfo showResults = t.GetMethod("showResults");
-                validate.Invoke(null, new object[] { inputString });
+                if ((bool)validate.Invoke(null, new object[] { inputString }) != true)
+                {
+                    Log("Входные данные имеют неправильный формат");
+                    return;
+                }
                 object data = parseData.Invoke(null, new object[] { inputString });
                 byte[] output = (byte[])execute.Invoke(null,new object[]{data, 0, 1});
                 Log("Задание выполнено.");
@@ -155,8 +159,14 @@ namespace MasterSlaveApplication
                 appDomain = AppDomain.CreateDomain("TaskDomain");
                 Assembly assm = appDomain.Load(taskData);
                 Type t = assm.GetExportedTypes()[1];
-                dynamic taskObject = Activator.CreateInstance(t);
-                taskObject.validate(inputString);
+                MethodInfo validate = t.GetMethod("validate");
+                MethodInfo showResults = t.GetMethod("showResults");
+                if ((bool)validate.Invoke(null, new object[] { inputString }) != true)
+                {
+                    Log("Входные данные имеют неправильный формат");
+                    return;
+                }
+
                 inputData = Encoding.ASCII.GetBytes(inputString);
                 inputString = null;
                 List<TcpClient> clients = new List<TcpClient>();
@@ -179,20 +189,18 @@ namespace MasterSlaveApplication
                 List<byte[]> outputs = new List<byte[]>();
                 foreach (TcpClient tcp in clients)
                 {
-                    try
-                    {
                         NetworkStream netstream = tcp.GetStream();
                         byte[] output = recvTaskOutput(netstream);
                         outputs.Add(output);
                         tcp.Close();
                         //call merge on task
-                    }
-                    catch (ObjectDisposedException exc)
-                    {
-                        Log(exc.Message);
-                        //Socket was closed
-                    }
                 }
+                showResults.Invoke(null, new object[] { outputs });
+            }
+            catch (ObjectDisposedException exc)
+            {
+                Log(exc.Message);
+                //Socket was closed
             }
             catch (Exception exc)
             {
