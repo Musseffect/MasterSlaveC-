@@ -41,7 +41,7 @@ namespace SlaveApplication
         private int port;
         public Slave()
         {
-            masterIP = new IPAddress(0x0100007F);
+            masterIP = IPAddress.Parse("192.168.0.1");
             Init();
         }
         private static Header getMessageType(byte[] message)
@@ -116,11 +116,18 @@ namespace SlaveApplication
             byte[] metaInfo=null;
             byte[] taskData=null;
             byte[] inputData=null;
-            loadData(tcpClient.GetStream(), out metaInfo, out taskData, out inputData);
-            int header = BitConverter.ToInt32(metaInfo, 0);
-            int workerNumber = BitConverter.ToInt32(metaInfo, 4);
-            int workerCount = BitConverter.ToInt32(metaInfo, 8);
-            executeTask(tcpClient,taskData, BitConverter.ToString(inputData),workerNumber,workerCount);
+            try
+            {
+                loadData(tcpClient.GetStream(), out metaInfo, out taskData, out inputData); 
+                int workerNumber = BitConverter.ToInt32(metaInfo, 0);
+                int workerCount = BitConverter.ToInt32(metaInfo, 4);
+                executeTask(tcpClient, taskData, Encoding.UTF8.GetString(inputData), workerNumber, workerCount);
+            }
+            catch (Exception exc)
+            {
+                sendError(tcpClient.GetStream(), exc.Message);
+                Log(exc.Message);
+            }
             tcpClient.Close();
         }
         void executeTask(TcpClient tcpClient,byte[] taskData, string inputString,int workerNumber, int workersCount)
@@ -155,10 +162,11 @@ namespace SlaveApplication
         }
         void sendError(NetworkStream netStream,string message)
         {
-            sendData(netStream, Header.ERROR, Encoding.ASCII.GetBytes(message));
+            sendData(netStream, Header.ERROR, Encoding.UTF8.GetBytes(message));
         }
         void sendData(NetworkStream netStream,Header header,byte[]message)
         {
+            netStream.Write(BitConverter.GetBytes(sizeof(int)+message.Length),0,sizeof(int));
             netStream.Write(BitConverter.GetBytes((int)header), 0, sizeof(int));
             netStream.Write(message, 0, message.Length);
         }
@@ -185,11 +193,11 @@ namespace SlaveApplication
             netStream.Read(blength, 0, 4);
             int length = BitConverter.ToInt32(blength, 0);
             length -= 4;
+            byte[] headerBytes = new byte[4];
+            netStream.Read(headerBytes, 0, 4);
+            header = BitConverter.ToInt32(headerBytes, 0);
             if (length > 0)
             {
-                byte[] headerBytes = new byte[4];
-                netStream.Read(headerBytes, 0, 4);
-                header = BitConverter.ToInt32(headerBytes,0);
                 byte[] buffer = new byte[length];
                 netStream.Read(buffer, 0, length);
                 return buffer;
