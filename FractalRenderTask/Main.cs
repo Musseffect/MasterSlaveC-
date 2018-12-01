@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-
 namespace FractalRenderTask
 {
     public class TaskData
@@ -65,5 +65,14 @@ namespace FractalRenderTask
             }
             MessageBox.Show("Результат: "+sum.ToString(),"Задание выполнено");
         }
+    }
+    private class Camera
+    {
+        Vector3 pos;
+        Vector3 dir;
+        Vector3 up;
+        float aperture;
+        float focalDist;
+        float fov;
     }
 }

@@ -112,7 +112,7 @@ namespace MasterSlaveApplication
             logMessages = new ObservableCollection<String>() { "Программа запущена" };
             inputFileName = "";
             taskFileName = "";
-            master.Log += Log;
+            master.Log += LogHandler;
             InitializeComponent();
             DataContext = this;
         }
@@ -135,6 +135,10 @@ namespace MasterSlaveApplication
             DiscoverWorkersButton.Content = "Поиск работников";
             DiscoverWorkersButton.Click -= stopDiscover;
             DiscoverWorkersButton.Click += DiscoverWorkersButton_Click;
+        }
+        private void LogHandler(string message)
+        {
+            Dispatcher.BeginInvoke((Action)(delegate {Log(message);}));
         }
         private void Log(string message)
         {
