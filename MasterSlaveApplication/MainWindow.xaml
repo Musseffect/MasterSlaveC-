@@ -58,7 +58,7 @@
                     <GridView.ColumnHeaderContainerStyle>
                         <Style TargetType="{x:Type GridViewColumnHeader}">
                             <Setter Property="Visibility"
-    							Value="Collapsed"/>
+    							Value="Visible"/>
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
                     <GridViewColumn>

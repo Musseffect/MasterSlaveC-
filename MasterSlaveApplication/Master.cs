@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace MasterSlaveApplication
 {
-    enum Header {INCORRECT=-1,ERROR=0,DATASEND,SLAVEDISCOVER,SLAVEINFO };
+    enum Header {INCORRECT=-1,ERROR=0,DATASEND=1,SLAVEDISCOVER=2,SLAVEINFO=3 };
     class Master
     {
         public delegate void LogHandler(string message);
@@ -21,6 +21,10 @@ namespace MasterSlaveApplication
 
         int port;
         bool discoverIsRunning;
+        public Master()
+        {
+            port = 11256;
+        }
         async public Task<List<IPAddress>> discoverSlaves()
         {
             List<IPAddress> workers=new List<IPAddress>();
@@ -31,6 +35,7 @@ namespace MasterSlaveApplication
                 try
                 {
                     udp = new UdpClient(port);
+                    udp.EnableBroadcast = true;
                 }
                 catch (ArgumentOutOfRangeException exc)
                 {
@@ -149,7 +154,7 @@ namespace MasterSlaveApplication
             {
                 appDomain = AppDomain.CreateDomain("TaskDomain");
                 Assembly assm = appDomain.Load(taskData);
-                Type t = assm.GetExportedTypes()[0];
+                Type t = assm.GetExportedTypes()[1];
                 dynamic taskObject = Activator.CreateInstance(t);
                 taskObject.validate(inputString);
                 inputData = Encoding.ASCII.GetBytes(inputString);
