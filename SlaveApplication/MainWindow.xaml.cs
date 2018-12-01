@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -20,11 +21,23 @@ namespace SlaveApplication
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void OnPropertyChanged(String property)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(property));
+            }
+        }
         private Slave slave;
         private String state = "Свободен";
         private ObservableCollection<String> logMessages;
+        public Slave SlaveObject
+        {
+            get { return slave; }
+        }
         public ObservableCollection<String> LogItems
         {
             get { return logMessages; }
@@ -41,17 +54,24 @@ namespace SlaveApplication
             logMessages = new ObservableCollection<String>() {"Программа запущена"};
             slave=new Slave();
             InitializeComponent();
-            DataContext=this;
-            slave.Log+=Log;
+            slave.Log+=LogHandler;
             slave.ExceptionRestart+=ExceptionHandler;
             RunSlave();
+            DataContext = this;
         }
         private void RunSlave()
         {
             udpThread = new Thread(slave.listenUDP);
             tcpThread = new Thread(slave.listenTCP);
+            udpThread.IsBackground = true;
+            tcpThread.IsBackground = true;
             udpThread.Start();
             tcpThread.Start();
+        }
+        private void OnWindowClosing(object sender, CancelEventArgs e)
+        {
+            udpThread.Abort();
+            tcpThread.Abort();
         }
         private void RestartSlave()
         {
@@ -59,12 +79,18 @@ namespace SlaveApplication
             tcpThread.Abort();
             udpThread = new Thread(slave.listenUDP);
             tcpThread = new Thread(slave.listenTCP);
+            udpThread.IsBackground = true;
+            tcpThread.IsBackground = true;
             udpThread.Start();
             tcpThread.Start();
         }
         private void UpdateIP_Click(object sender, RoutedEventArgs e)
         {
             slave.MasterIP=this.ipTextBox.Text;
+        }
+        private void LogHandler(string message)
+        {
+            Dispatcher.BeginInvoke((Action)(delegate { Log(message); }));
         }
         private void Log(string message)
         {
@@ -74,7 +100,7 @@ namespace SlaveApplication
         }
         private void ExceptionHandler(string message)
         {
-            Log(message);
+            LogHandler(message);
             RestartSlave();
         }
         ~MainWindow()

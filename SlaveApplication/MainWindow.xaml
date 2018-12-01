@@ -32,9 +32,9 @@
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Grid.Row="0" TextWrapping="Wrap" Text="Текущий IP мастер-сервера"/>
-                    <TextBlock Grid.Column="1" Grid.Row="0" TextWrapping="Wrap" Text="{Binding slave.MasterIP}" VerticalAlignment="Top"/>
+                    <TextBlock Grid.Column="1" Grid.Row="0" TextWrapping="Wrap" Text="{Binding SlaveObject.MasterIP}" VerticalAlignment="Top" HorizontalAlignment="Left"/>
                     <TextBlock Grid.Column="0" Grid.Row="1" TextWrapping="Wrap" Text="Текущее состояние" VerticalAlignment="Top"/>
-                    <TextBlock Grid.Column="1" Grid.Row="1" TextWrapping="Wrap" HorizontalAlignment="Right" Text="{Binding State}"/>
+                    <TextBlock Grid.Column="1" Grid.Row="1" TextWrapping="Wrap" HorizontalAlignment="Left" Text="{Binding State}"/>
                 </Grid>
             </Border>
         </ScrollViewer>

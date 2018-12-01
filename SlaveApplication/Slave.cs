@@ -7,19 +7,21 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 
 namespace SlaveApplication
 {
-    enum Header {INCORRECT=-1,ERROR=0,DATASEND,SLAVEDISCOVER,SLAVEINFO };
-    class Slave : INotifyPropertyChanged
+    enum Header {INCORRECT=-1,ERROR=0,DATASEND=1,SLAVEDISCOVER=2,SLAVEINFO=3 };
+    public class Slave : INotifyPropertyChanged
     {
         public delegate void LogHandler(string message);
         public event LogHandler Log;
         public delegate void ExceptionHandler(string message);
         public event ExceptionHandler ExceptionRestart;
 
-        private IPAddress masterIP=new IPAddress(0x0100007F);
+        private IPAddress masterIP;
         public string MasterIP
         {
             get { return masterIP.ToString(); }
@@ -39,16 +41,21 @@ namespace SlaveApplication
         private int port;
         public Slave()
         {
+            masterIP = new IPAddress(0x0100007F);
             Init();
         }
-        public static Header getMessageType(byte[] message)
+        private static Header getMessageType(byte[] message)
         {
+            int header=BitConverter.ToInt32(message,0);
+            if (Enum.IsDefined(typeof(Header), header))
+                return (Header)header;
             return Header.INCORRECT;
         }
         public void Init(int port=11256)
         { 
             try{
-            udp = new UdpClient(port);
+                udp = new UdpClient(port);
+                udp.EnableBroadcast = true;
             }catch (ArgumentOutOfRangeException exc)
             {
                 //Incorrect port number
@@ -68,12 +75,13 @@ namespace SlaveApplication
             {
                 while (true)
                 {
-                    IPEndPoint endPoint = new IPEndPoint(masterIP,port);
+                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Any,port);
                     byte[] message = udp.Receive(ref endPoint);
-                    if (endPoint.Address == this.masterIP && getMessageType(message)==Header.SLAVEDISCOVER)
+                    Log("Получено сообщение с адреса "+endPoint.Address.ToString());
+                    if (endPoint.Address.Equals(this.masterIP) && getMessageType(message)==Header.SLAVEDISCOVER)
                     {
                         IPEndPoint ip = endPoint;
-                        udp.Send(BitConverter.GetBytes((int)Header.SLAVEINFO),sizeof(int));
+                        udp.Send(BitConverter.GetBytes((int)Header.SLAVEINFO),sizeof(int),endPoint);
                     }
                 }
             }
