@@ -1,26 +1,13 @@
 ﻿<Window x:Class="SlaveApplication.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Рабочий" Height="264.685" Width="319.947">
+        Title="Рабочий" Height="291.685" Width="319.947">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="141"/>
+            <RowDefinition Height="67"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        <Grid Margin="10,10,10,0" Height="53" VerticalAlignment="Top">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition/>
-                <RowDefinition/>
-            </Grid.RowDefinitions>
-            <Label Content="IP Мастер-сервера" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" Margin="0,0,13,0"/>
-            <TextBox x:Name="ipTextBox" Height="23" TextWrapping="Wrap" VerticalAlignment="Top" Grid.Row="0" Grid.Column="1" Margin="5,0,0,0"/>
-            <Button x:Name="UpdateIP" Content="Обновить" Margin="0,2" HorizontalAlignment="Center" Width="75" Click="UpdateIP_Click" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"/>
-        </Grid>
-        <ScrollViewer Height="66" Margin="10,76,10,0" VerticalAlignment="Top" VerticalScrollBarVisibility="Auto" Grid.RowSpan="1" Grid.Row="0" HorizontalContentAlignment="Stretch">
+        <ScrollViewer Margin="10,10,10,0" VerticalScrollBarVisibility="Auto" Grid.RowSpan="1" Grid.Row="0" HorizontalContentAlignment="Stretch" Height="50" VerticalAlignment="Top">
             <Border BorderThickness="1" BorderBrush="Black" Grid.IsSharedSizeScope="True" Height="50" VerticalAlignment="Top">
                 <Grid ShowGridLines="True">
                     <Grid.RowDefinitions>
@@ -31,14 +18,14 @@
                         <ColumnDefinition/>
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Grid.Row="0" TextWrapping="Wrap" Text="Текущий IP мастер-сервера"/>
-                    <TextBlock Grid.Column="1" Grid.Row="0" TextWrapping="Wrap" Text="{Binding SlaveObject.MasterIP}" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                    <TextBlock Grid.Column="0" Grid.Row="0" TextWrapping="Wrap" Text="Текущий IP"/>
+                    <TextBlock Grid.Column="1" Grid.Row="0" TextWrapping="Wrap" Text="{Binding SlaveObject.IP}" VerticalAlignment="Top" HorizontalAlignment="Left"/>
                     <TextBlock Grid.Column="0" Grid.Row="1" TextWrapping="Wrap" Text="Текущее состояние" VerticalAlignment="Top"/>
-                    <TextBlock Grid.Column="1" Grid.Row="1" TextWrapping="Wrap" HorizontalAlignment="Left" Text="{Binding State}"/>
+                    <TextBlock Grid.Column="1" Grid.Row="1" TextWrapping="Wrap" HorizontalAlignment="Left" Text="{Binding SlaveObject.State}"/>
                 </Grid>
             </Border>
         </ScrollViewer>
-        <ListBox x:Name="logListBox" ItemsSource="{Binding LogItems}" Margin="10,6,10,12" Grid.Row="1">
+        <ListBox x:Name="logListBox" ItemsSource="{Binding LogItems}" Margin="10,10,10,12" Grid.Row="1">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">

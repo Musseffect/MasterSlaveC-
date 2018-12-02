@@ -33,7 +33,7 @@ namespace MasterSlaveApplication
                 PropertyChanged(this, new PropertyChangedEventArgs(property));
             }
         }
-        public class SlaveInfo : INotifyPropertyChanged
+        public class SlaveInfo : INotifyPropertyChanged, IEquatable<SlaveInfo>
         {
             IPAddress ip;
             bool choosen;
@@ -41,6 +41,21 @@ namespace MasterSlaveApplication
             {
                 choosen = true;
                 this.ip = ip;
+            }
+            public bool Equals(SlaveInfo obj)
+            {
+                return ip.Equals(obj.ip);
+            }
+            public override bool Equals(Object obj)
+            {
+                if (obj == null)
+                    return false;
+
+                SlaveInfo slaveObj = obj as SlaveInfo;
+                if (slaveObj == null)
+                    return false;
+                else
+                    return Equals(slaveObj);
             }
             public IPAddress getIP()
             {
@@ -109,32 +124,36 @@ namespace MasterSlaveApplication
         {
             slaves = new ObservableCollection<SlaveInfo>() {  };
             master = new Master();
-            logMessages = new ObservableCollection<String>() { "Программа запущена" };
+            logMessages = new ObservableCollection<String>() { };
             inputFileName = "G:\\Users\\Misha\\Documents\\Visual Studio 2013\\Projects\\MasterSlaveApplication\\MasterSlaveApplication\\bin\\Debug\\task.txt";
             taskFileName = "G:\\Users\\Misha\\Documents\\Visual Studio 2013\\Projects\\MasterSlaveApplication\\MasterSlaveApplication\\bin\\Debug\\FractalRenderTask.dll";
             master.Log += LogHandler;
             InitializeComponent();
             DataContext = this;
+            Log("Программа запущена");
         }
-        private void stopDiscover(object sender, RoutedEventArgs e)
+        private void AddWorkerButton_Click(object sender, RoutedEventArgs e)
         {
-            master.stopDiscover();
-        }
-        private async void DiscoverWorkersButton_Click(object sender, RoutedEventArgs e)
-        {
-            DiscoverWorkersButton.Click -= DiscoverWorkersButton_Click;
-            DiscoverWorkersButton.Click += stopDiscover;
-            DiscoverWorkersButton.Content="Стоп";
-            slaves.Clear();
-            var discoverTask = master.discoverSlaves();
-            List<IPAddress> addresses = await discoverTask;
-            foreach (IPAddress address in addresses)
+            try
             {
-                slaves.Add(new SlaveInfo(address));
+                IPAddress address = IPAddress.Parse(ipTextBox.Text);
+                SlaveInfo slave = new SlaveInfo(address);
+                if(!slaves.Contains(slave))
+                    slaves.Add(new SlaveInfo(address));
+            }catch(Exception exc)
+            {
+                MessageBox.Show("Введённый адрес не соответствует формату.");
             }
-            DiscoverWorkersButton.Content = "Поиск работников";
-            DiscoverWorkersButton.Click -= stopDiscover;
-            DiscoverWorkersButton.Click += DiscoverWorkersButton_Click;
+        }
+
+        private void RemoveWorkerButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedItems=ServerListView.SelectedItems;
+            if (ServerListView.SelectedIndex != -1)
+            {
+                for (int i = selectedItems.Count - 1; i >= 0; i--)
+                    slaves.Remove((SlaveInfo)selectedItems[i]);
+            }
         }
         private void LogHandler(string message)
         {
@@ -142,7 +161,7 @@ namespace MasterSlaveApplication
         }
         private void Log(string message)
         {
-            logMessages.Add(message);
+            logMessages.Insert(0, DateTime.Now.ToString("[hh:mm:ss] ") + message);
             for(int i=logMessages.Count-1;i>11;i--) 
                 logMessages.RemoveAt(i);
         }

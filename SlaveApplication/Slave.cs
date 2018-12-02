@@ -21,12 +21,18 @@ namespace SlaveApplication
         public delegate void ExceptionHandler(string message);
         public event ExceptionHandler ExceptionRestart;
 
-        private IPAddress masterIP;
-        public string MasterIP
+        private String state = "Свободен";
+        private IPAddress slaveIP;
+        public String State
         {
-            get { return masterIP.ToString(); }
-            set { 
-                masterIP = IPAddress.Parse(value);
+            get { return state; }
+            set { state = value; }
+        }
+        public string IP
+        {
+            get { return slaveIP.ToString(); }
+            set {
+                slaveIP = IPAddress.Parse(value);
                 OnPropertyChanged("MasterIP");
             }
         }
@@ -36,12 +42,10 @@ namespace SlaveApplication
             if (PropertyChanged != null)
                 PropertyChanged(this, new PropertyChangedEventArgs(prop));
         }
-        private UdpClient udp;
         private TcpListener tcpListener;
         private int port;
         public Slave()
         {
-            masterIP = IPAddress.Parse("192.168.0.1");
             Init();
         }
         private static Header getMessageType(byte[] message)
@@ -52,43 +56,10 @@ namespace SlaveApplication
             return Header.INCORRECT;
         }
         public void Init(int port=11256)
-        { 
-            try{
-                udp = new UdpClient(port);
-                udp.EnableBroadcast = true;
-            }catch (ArgumentOutOfRangeException exc)
-            {
-                //Incorrect port number
-                Log("Incorrect port number");
-            }
-            catch(SocketException exc)
-            {
-                //Choosen port is already in use
-                Log("Choosen port is already in use");
-            }
-            tcpListener = new TcpListener(IPAddress.Any,port);
-            this.port=port;
-        }
-        public void listenUDP()
         {
-            try
-            {
-                while (true)
-                {
-                    IPEndPoint endPoint = new IPEndPoint(IPAddress.Any,port);
-                    byte[] message = udp.Receive(ref endPoint);
-                    Log("Получено сообщение с адреса "+endPoint.Address.ToString());
-                    if (endPoint.Address.Equals(this.masterIP) && getMessageType(message)==Header.SLAVEDISCOVER)
-                    {
-                        IPEndPoint ip = endPoint;
-                        udp.Send(BitConverter.GetBytes((int)Header.SLAVEINFO),sizeof(int),endPoint);
-                    }
-                }
-            }
-            catch (Exception exc)
-            {
-                Log(exc.Message);
-            }
+            tcpListener = new TcpListener(IPAddress.Any, port);
+            slaveIP = ((IPEndPoint)tcpListener.LocalEndpoint).Address;
+            this.port=port;
         }
         public void listenTCP()
         {
@@ -99,6 +70,7 @@ namespace SlaveApplication
             catch (Exception exc)
             {
                 Log(exc.Message);
+                return;
             }
             while (true)
             {
@@ -110,6 +82,7 @@ namespace SlaveApplication
                     Log(exc.Message);
                 }
             }
+            tcpListener.Stop();
         }
         public void processTcpClient(TcpClient tcpClient)
         {

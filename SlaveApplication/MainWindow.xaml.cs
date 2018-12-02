@@ -32,7 +32,6 @@ namespace SlaveApplication
             }
         }
         private Slave slave;
-        private String state = "Свободен";
         private ObservableCollection<String> logMessages;
         public Slave SlaveObject
         {
@@ -42,12 +41,6 @@ namespace SlaveApplication
         {
             get { return logMessages; }
         }
-        public String State
-        {
-            get { return state; }
-            set { state = value; }
-        }
-        Thread udpThread;
         Thread tcpThread;
         public MainWindow()
         {
@@ -61,32 +54,20 @@ namespace SlaveApplication
         }
         private void RunSlave()
         {
-            udpThread = new Thread(slave.listenUDP);
             tcpThread = new Thread(slave.listenTCP);
-            udpThread.IsBackground = true;
             tcpThread.IsBackground = true;
-            udpThread.Start();
             tcpThread.Start();
         }
         private void OnWindowClosing(object sender, CancelEventArgs e)
         {
-            udpThread.Abort();
             tcpThread.Abort();
         }
         private void RestartSlave()
         {
-            udpThread.Abort();
             tcpThread.Abort();
-            udpThread = new Thread(slave.listenUDP);
             tcpThread = new Thread(slave.listenTCP);
-            udpThread.IsBackground = true;
             tcpThread.IsBackground = true;
-            udpThread.Start();
             tcpThread.Start();
-        }
-        private void UpdateIP_Click(object sender, RoutedEventArgs e)
-        {
-            slave.MasterIP=this.ipTextBox.Text;
         }
         private void LogHandler(string message)
         {
@@ -94,7 +75,7 @@ namespace SlaveApplication
         }
         private void Log(string message)
         {
-            logMessages.Add(message);
+            logMessages.Insert(0, DateTime.Now.ToString("[h:mm:tt] ") + message);
             for (int i = logMessages.Count - 1; i > 11; i--)
                 logMessages.RemoveAt(i);
         }
@@ -105,8 +86,7 @@ namespace SlaveApplication
         }
         ~MainWindow()
         {
-            udpThread.Abort();
-            udpThread.Abort();
+            tcpThread.Abort();
         }
     }
 }

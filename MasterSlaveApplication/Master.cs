@@ -13,69 +13,16 @@ using System.Threading.Tasks;
 
 namespace MasterSlaveApplication
 {
-    enum Header {INCORRECT=-1,ERROR=0,DATASEND=1,SLAVEDISCOVER=2,SLAVEINFO=3 };
+    enum Header {INCORRECT=-1,ERROR=0,DATASEND=1 };
     class Master
     {
         public delegate void LogHandler(string message);
         public event LogHandler Log;
 
         int port;
-        bool discoverIsRunning;
         public Master()
         {
             port = 11256;
-        }
-        async public Task<List<IPAddress>> discoverSlaves()
-        {
-            List<IPAddress> workers=new List<IPAddress>();
-            discoverIsRunning = true;
-            try
-            {
-                UdpClient udp;
-                try
-                {
-                    udp = new UdpClient(port);
-                    udp.EnableBroadcast = true;
-                }
-                catch (ArgumentOutOfRangeException exc)
-                {
-                    Log("Incorrect port number");
-                    return workers;
-                }
-                catch (SocketException exc)
-                {
-                    Log("Choosen port is already in use");
-                    return workers;
-                }
-                IPEndPoint ip = new IPEndPoint(IPAddress.Broadcast, 11256);
-                byte[] message = BitConverter.GetBytes((Int32)Header.SLAVEDISCOVER);
-                udp.Send(message, message.Length, ip);
-                while(discoverIsRunning)
-                {
-                    var timeoutTask = Task.Delay(10000);
-                    var receiveTask = udp.ReceiveAsync();
-                    if(timeoutTask == await Task.WhenAny(timeoutTask,receiveTask))
-                    {
-                        discoverIsRunning=false;
-                        break;
-                    }
-                    UdpReceiveResult udpReceiveResult = await receiveTask;
-                    byte []recv = udpReceiveResult.Buffer;
-
-                    IPEndPoint remoteIPEndPoint = udpReceiveResult.RemoteEndPoint;
-                    if (recv == null || recv.Length == 0)
-                        continue;
-                    if (BitConverter.ToInt32(recv, 0) == (Int32)Header.SLAVEINFO)
-                    {
-                        workers.Add(remoteIPEndPoint.Address);
-                    }
-                }
-                udp.Close();
-            }catch(SocketException exc)
-            {
-                Log(exc.Message);
-            }
-            return workers;
         }
         public dynamic loadTask(string filePath)
         {
@@ -140,6 +87,8 @@ namespace MasterSlaveApplication
         }
         public void sendTasks(List<IPAddress> workers,string taskPath,string inputPath)
         {
+            if (workers.Count == 0)
+                return;
             AppDomain appDomain = null;
             byte[] taskData;
             string inputString;
@@ -283,10 +232,6 @@ namespace MasterSlaveApplication
         {
             netStream.Write(BitConverter.GetBytes(data.Length),0,sizeof(int));
             netStream.Write(data, 0, data.Length);
-        }
-        public void stopDiscover()
-        {
-            discoverIsRunning=false;
         }
     }
 }
