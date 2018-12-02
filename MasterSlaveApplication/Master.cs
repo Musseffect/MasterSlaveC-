@@ -225,6 +225,13 @@ namespace MasterSlaveApplication
         }
         byte[] recvTaskOutput(NetworkStream netStream)
         {
+            byte[] messageLength = new byte[4];
+            netStream.Read(messageLength, 0, 4);
+            int ;
+
+
+
+
             byte[] blength=new byte[4];
             netStream.Read(blength,0,4);
             int length=BitConverter.ToInt32(blength,0);
@@ -248,19 +255,24 @@ namespace MasterSlaveApplication
         }
         void sendTaskAndInput(NetworkStream netStream,byte[] taskData,byte[]inputData,byte[]metainfo)
         {
-            sendChunk(netStream, Header.DATASEND, metainfo);
-            sendChunk(netStream,Header.DATASEND, taskData);
-            sendChunk(netStream, Header.DATASEND, inputData);
-
-
-
-
-
+            byte[] rv = new byte[sizeof(int) + sizeof(int) + sizeof(int) + taskData.Length + inputData.Length + metainfo.Length];
+            int offset = 0;
+            System.Buffer.BlockCopy(BitConverter.GetBytes((int)Header.DATASEND), 0, rv, offset, sizeof(int));
+            offset += sizeof(int);
+            System.Buffer.BlockCopy(BitConverter.GetBytes(taskData.Length), 0, rv, offset, sizeof(int));
+            offset += sizeof(int);
+            System.Buffer.BlockCopy(BitConverter.GetBytes(inputData.Length), 0, rv, offset, sizeof(int));
+            offset += sizeof(int);
+            System.Buffer.BlockCopy(taskData, 0, rv, offset, taskData.Length);
+            offset += taskData.Length;
+            System.Buffer.BlockCopy(inputData, 0, rv, offset, inputData.Length);
+            offset += inputData.Length;
+            System.Buffer.BlockCopy(metainfo, 0, rv, offset, metainfo.Length);
+            sendChunk(netStream,rv);
         }
-        void sendChunk(NetworkStream netStream,Header header,byte[]data)
+        void sendChunk(NetworkStream netStream,byte[]data)
         {
-            netStream.Write(BitConverter.GetBytes(sizeof(int)+data.Length),0,sizeof(int));
-            netStream.Write(BitConverter.GetBytes((int)header), 0, sizeof(int));
+            netStream.Write(BitConverter.GetBytes(data.Length),0,sizeof(int));
             netStream.Write(data, 0, data.Length);
         }
         public void stopDiscover()

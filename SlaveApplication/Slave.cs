@@ -113,15 +113,14 @@ namespace SlaveApplication
         }
         public void processTcpClient(TcpClient tcpClient)
         {
-            byte[] metaInfo=null;
             byte[] taskData=null;
-            byte[] inputData=null;
+            string inputData="";
             try
             {
-                loadData(tcpClient.GetStream(), out metaInfo, out taskData, out inputData); 
-                int workerNumber = BitConverter.ToInt32(metaInfo, 0);
-                int workerCount = BitConverter.ToInt32(metaInfo, 4);
-                executeTask(tcpClient, taskData, Encoding.UTF8.GetString(inputData), workerNumber, workerCount);
+                int workerNumber=0;
+                int workerCount = 0;
+                loadData(tcpClient.GetStream(), out taskData, out inputData, out workerNumber, out workerCount);
+                executeTask(tcpClient, taskData, inputData, workerNumber, workerCount);
             }
             catch (Exception exc)
             {
@@ -146,7 +145,7 @@ namespace SlaveApplication
                 object data = parseData.Invoke(null, new object[] { inputString });
                 byte[] output = (byte[])execute.Invoke(null, new object[] { data, workerNumber, workersCount });
                 Log("Задание выполнено.");
-                sendOutput(tcpClient.GetStream(), output);
+                sendOutput(tcpClient.GetStream(),Header.DATASEND, output);
                 Log("Результаты отправлены назад.");
             }
             catch(Exception exc)
@@ -162,47 +161,51 @@ namespace SlaveApplication
         }
         void sendError(NetworkStream netStream,string message)
         {
-            sendData(netStream, Header.ERROR, Encoding.UTF8.GetBytes(message));
+            sendOutput(netStream, Header.ERROR, Encoding.UTF8.GetBytes(message));
         }
-        void sendData(NetworkStream netStream,Header header,byte[]message)
+        void sendChunk(NetworkStream netStream, byte[] data)
         {
-            netStream.Write(BitConverter.GetBytes(sizeof(int)+message.Length),0,sizeof(int));
-            netStream.Write(BitConverter.GetBytes((int)header), 0, sizeof(int));
-            netStream.Write(message, 0, message.Length);
+            netStream.Write(BitConverter.GetBytes(data.Length), 0, sizeof(int));
+            netStream.Write(data, 0, data.Length);
         }
-        void sendOutput(NetworkStream netStream,byte[] data)
+        void sendOutput(NetworkStream netStream,Header header,byte[] data)
         {
-            sendData(netStream,Header.DATASEND,data);
+            byte[]message=new byte[data.Length+sizeof(int)];
+            int offset = 0;
+            System.Buffer.BlockCopy(BitConverter.GetBytes((int)header), 0, message, offset, sizeof(int));
+            offset += sizeof(int);
+            System.Buffer.BlockCopy(BitConverter.GetBytes(data.Length), 0, message, offset, sizeof(int));
+            sendChunk(netStream,message);
         }
-        public void loadData(NetworkStream netStream, out byte[] metaInfo, out byte[] taskData, out byte[] inputData)
+        public void loadData(NetworkStream netStream, out byte[] taskData, out string inputData, out int workerNumber, out int workerCount)
         {
-            int header=0;
-            metaInfo = readChunk(netStream, ref header);
+            byte[] data = readChunk(netStream);
+            int header=BitConverter.ToInt32(data,0);
             if (header != (int)(Header.DATASEND))
                 throw new Exception("Некорректный заголовок пакета");
-            taskData = readChunk(netStream, ref header);
-            if (header != (int)(Header.DATASEND))
-                throw new Exception("Некорректный заголовок пакета");
-            inputData = readChunk(netStream, ref header);
-            if (header != (int)(Header.DATASEND))
-                throw new Exception("Некорректный заголовок пакета");
+            int taskSize=BitConverter.ToInt32(data,sizeof(int));
+            int inputSize = BitConverter.ToInt32(data, 2*sizeof(int));
+            int metaSize=sizeof(int)*2;
+            taskData=new ArraySegment<byte>(data,sizeof(int)*3,taskSize).ToArray();
+            inputData=Encoding.UTF8.GetString(data,3*sizeof(int)+taskSize,inputSize);
+            workerNumber = BitConverter.ToInt32(data, 3*sizeof(int)+taskSize+inputSize);
+            workerCount = BitConverter.ToInt32(data, 4 * sizeof(int) + taskSize + inputSize);
         }
-        byte[] readChunk(NetworkStream netStream,ref int header)
+        byte[] readChunk(NetworkStream netStream)
         {
             byte[] blength = new byte[4];
             netStream.Read(blength, 0, 4);
-            int length = BitConverter.ToInt32(blength, 0);
-            length -= 4;
-            byte[] headerBytes = new byte[4];
-            netStream.Read(headerBytes, 0, 4);
-            header = BitConverter.ToInt32(headerBytes, 0);
-            if (length > 0)
+            int length=BitConverter.ToInt32(blength, 0);
+            byte[] buffer = new byte[length];
+            int offset=0;
+            int chunkSize=1024;
+            while (length > 0)
             {
-                byte[] buffer = new byte[length];
-                netStream.Read(buffer, 0, length);
-                return buffer;
+                int size=Math.Min(length, chunkSize);
+                int read=netStream.Read(buffer, offset, size);
+                offset += read;
             }
-            throw new Exception("Некорректный пакет");
+            return buffer;
         }
     }
 }
