@@ -144,6 +144,7 @@ namespace MasterSlaveApplication
             byte[] taskData;
             string inputString;
             byte[] inputData;
+            List<TcpClient> clients = new List<TcpClient>();
             try
             {
                 taskData = File.ReadAllBytes(taskPath);
@@ -169,7 +170,6 @@ namespace MasterSlaveApplication
 
                 inputData = Encoding.UTF8.GetBytes(inputString);
                 inputString = null;
-                List<TcpClient> clients = new List<TcpClient>();
                 int i = 0;
                 foreach (IPAddress worker in workers)
                 {
@@ -193,13 +193,20 @@ namespace MasterSlaveApplication
                     i++;
                 }
                 List<byte[]> outputs = new List<byte[]>();
-                foreach (TcpClient tcp in clients)
+                for (i = 0; i < clients.Count; i++)
                 {
-                        NetworkStream netstream = tcp.GetStream();
-                        byte[] output = recvTaskOutput(netstream);
-                        outputs.Add(output);
-                        tcp.Close();
-                        //call merge on task
+                    TcpClient tcp = clients[i];
+                    NetworkStream netstream = tcp.GetStream();
+                    byte[] output = recvTaskOutput(netstream);
+                    int header = BitConverter.ToInt32(output, 0);
+                    if (header == (int)Header.ERROR)
+                    {
+                        string message = Encoding.UTF8.GetString(output.Skip(sizeof(int)).ToArray());
+                        throw new Exception(message);
+                    }
+                    outputs.Add(output.Skip(sizeof(int)).ToArray());
+                    tcp.Close();
+                    clients[i] = null;
                 }
                 showResults.Invoke(null, new object[] { outputs });
             }
@@ -219,39 +226,41 @@ namespace MasterSlaveApplication
             }
             finally
             {
+                foreach (TcpClient tcp in clients)
+                {
+                    if (tcp != null)
+                    {
+                        tcp.Close();
+                    }
+                }
                 if (appDomain != null)
                     AppDomain.Unload(appDomain);
             }
+        }
+        void sendOutput(NetworkStream netStream, Header header, byte[] data)
+        {
+            byte[] message = new byte[data.Length + sizeof(int)];
+            int offset = 0;
+            System.Buffer.BlockCopy(BitConverter.GetBytes((int)header), 0, message, offset, sizeof(int));
+            offset += sizeof(int);
+            System.Buffer.BlockCopy(BitConverter.GetBytes(data.Length), 0, message, offset, sizeof(int));
+            sendChunk(netStream, message);
         }
         byte[] recvTaskOutput(NetworkStream netStream)
         {
             byte[] messageLength = new byte[4];
             netStream.Read(messageLength, 0, 4);
-            int ;
-
-
-
-
-            byte[] blength=new byte[4];
-            netStream.Read(blength,0,4);
-            int length=BitConverter.ToInt32(blength,0);
-            byte[] headerBytes = new byte[4];
-            netStream.Read(headerBytes, 0, 4);
-            int header = BitConverter.ToInt32(headerBytes,0);
-            length-=4;
-            byte[]buffer=null;
-            if(length>0)
+            int length = BitConverter.ToInt32(messageLength, 0);
+            int chunkSize = 1024;
+            byte[]data=new byte[length];
+            int offset = 0;
+            while (length > 0)
             {
-                buffer=new byte[length]; 
-                int bufferCapacity=length;
-                netStream.Read(buffer,0,bufferCapacity);
+                int size=Math.Min(1024,length);
+                int read = netStream.Read(data,offset,size);
+                offset += read;
             }
-            if (header == (int)Header.ERROR)
-            {
-                string message = Encoding.UTF8.GetString(buffer);
-                throw new Exception(message);
-            }
-            return buffer;
+            return data;
         }
         void sendTaskAndInput(NetworkStream netStream,byte[] taskData,byte[]inputData,byte[]metainfo)
         {
