@@ -167,24 +167,30 @@ namespace MasterSlaveApplication
                     return;
                 }
 
-                inputData = Encoding.ASCII.GetBytes(inputString);
+                inputData = Encoding.UTF8.GetBytes(inputString);
                 inputString = null;
                 List<TcpClient> clients = new List<TcpClient>();
+                int i = 0;
                 foreach (IPAddress worker in workers)
                 {
-                    try
+                    TcpClient tcp = new TcpClient();
+                    IPEndPoint endPoint = new IPEndPoint(worker, port);
+                    tcp.Connect(endPoint);
+                    NetworkStream netstream = tcp.GetStream();
+                    byte[] metainfo = new byte[8];
+                    using (MemoryStream stream = new MemoryStream())
                     {
-                        TcpClient tcp = new TcpClient();
-                        IPEndPoint endPoint = new IPEndPoint(worker, port);
-                        tcp.Connect(endPoint);
-                        NetworkStream netstream = tcp.GetStream();
-                        sendTaskAndInput(netstream, taskData, inputData);
-                        clients.Add(tcp);
+                        var writer = new BinaryWriter(stream);
+
+                        writer.Write(i);
+                        writer.Write(workers.Count);
+
+                        writer.Close();
+                        metainfo = stream.ToArray();
                     }
-                    catch (SocketException exc)
-                    {
-                        Log(exc.Message);
-                    }
+                    sendTaskAndInput(netstream, taskData, inputData,metainfo);
+                    clients.Add(tcp);
+                    i++;
                 }
                 List<byte[]> outputs = new List<byte[]>();
                 foreach (TcpClient tcp in clients)
@@ -196,6 +202,10 @@ namespace MasterSlaveApplication
                         //call merge on task
                 }
                 showResults.Invoke(null, new object[] { outputs });
+            }
+            catch (SocketException exc)
+            {
+                Log(exc.Message);
             }
             catch (ObjectDisposedException exc)
             {
@@ -218,15 +228,34 @@ namespace MasterSlaveApplication
             byte[] blength=new byte[4];
             netStream.Read(blength,0,4);
             int length=BitConverter.ToInt32(blength,0);
-            byte[] buffer=new byte[length]; 
-            int bufferCapacity=length;
-            netStream.Read(buffer,0,bufferCapacity);
+            byte[] headerBytes = new byte[4];
+            netStream.Read(headerBytes, 0, 4);
+            int header = BitConverter.ToInt32(headerBytes,0);
+            length-=4;
+            byte[]buffer=null;
+            if(length>0)
+            {
+                buffer=new byte[length]; 
+                int bufferCapacity=length;
+                netStream.Read(buffer,0,bufferCapacity);
+            }
+            if (header == (int)Header.ERROR)
+            {
+                string message = Encoding.UTF8.GetString(buffer);
+                throw new Exception(message);
+            }
             return buffer;
         }
-        void sendTaskAndInput(NetworkStream netStream,byte[] taskData,byte[]inputData)
+        void sendTaskAndInput(NetworkStream netStream,byte[] taskData,byte[]inputData,byte[]metainfo)
         {
+            sendChunk(netStream, Header.DATASEND, metainfo);
             sendChunk(netStream,Header.DATASEND, taskData);
             sendChunk(netStream, Header.DATASEND, inputData);
+
+
+
+
+
         }
         void sendChunk(NetworkStream netStream,Header header,byte[]data)
         {

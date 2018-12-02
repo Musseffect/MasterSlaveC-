@@ -107,11 +107,11 @@ namespace MasterSlaveApplication
         }
         public MainWindow()
         {
-            slaves = new ObservableCollection<SlaveInfo>() { new SlaveInfo(new IPAddress(0x0100007F)), new SlaveInfo(new IPAddress(0x0100007F)) };
+            slaves = new ObservableCollection<SlaveInfo>() {  };
             master = new Master();
             logMessages = new ObservableCollection<String>() { "Программа запущена" };
-            inputFileName = "";
-            taskFileName = "";
+            inputFileName = "G:\\Users\\Misha\\Documents\\Visual Studio 2013\\Projects\\MasterSlaveApplication\\MasterSlaveApplication\\bin\\Debug\\task.txt";
+            taskFileName = "G:\\Users\\Misha\\Documents\\Visual Studio 2013\\Projects\\MasterSlaveApplication\\MasterSlaveApplication\\bin\\Debug\\FractalRenderTask.dll";
             master.Log += LogHandler;
             InitializeComponent();
             DataContext = this;
