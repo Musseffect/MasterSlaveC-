@@ -75,7 +75,7 @@ namespace SlaveApplication
         }
         private void Log(string message)
         {
-            logMessages.Insert(0, DateTime.Now.ToString("[h:mm:tt] ") + message);
+            logMessages.Insert(0, DateTime.Now.ToString("[hh:mm:tt] ") + message);
             for (int i = logMessages.Count - 1; i > 11; i--)
                 logMessages.RemoveAt(i);
         }

@@ -24,13 +24,6 @@ namespace MasterSlaveApplication
         {
             port = 11256;
         }
-        public dynamic loadTask(string filePath)
-        {
-            var a = Assembly.Load(filePath);
-            Type t = a.GetExportedTypes()[0];
-            dynamic taskObject = Activator.CreateInstance(t);
-            return taskObject;
-        }
         public void setPort(int port = 11256)
         {
             this.port = port;
@@ -108,14 +101,21 @@ namespace MasterSlaveApplication
             {
                 appDomain = AppDomain.CreateDomain("TaskDomain");
                 Assembly assm = appDomain.Load(taskData);
+                string assemblyName=assm.GetName().Name;
                 Type t = assm.GetExportedTypes()[1];
-                MethodInfo validate = t.GetMethod("validate");
-                MethodInfo showResults = t.GetMethod("showResults");
-                if ((bool)validate.Invoke(null, new object[] { inputString }) != true)
+                dynamic task = Activator.CreateInstance(t);
+                /*MethodInfo validate = t.GetMethod("validate");
+                MethodInfo showResults = t.GetMethod("showResults");*/
+                if ((bool)task.validate(inputString) != true)
                 {
                     Log("Входные данные имеют неправильный формат");
                     return;
                 }
+                /*if ((bool)validate.Invoke(null, new object[] { inputString }) != true)
+                {
+                    Log("Входные данные имеют неправильный формат");
+                    return;
+                }*/
 
                 inputData = Encoding.UTF8.GetBytes(inputString);
                 inputString = null;
@@ -137,7 +137,7 @@ namespace MasterSlaveApplication
                         writer.Close();
                         metainfo = stream.ToArray();
                     }
-                    sendTaskAndInput(netstream, taskData, inputData,metainfo);
+                    sendTaskAndInput(netstream, taskData, inputData, metainfo, assemblyName);
                     clients.Add(tcp);
                     i++;
                 }
@@ -157,7 +157,8 @@ namespace MasterSlaveApplication
                     tcp.Close();
                     clients[i] = null;
                 }
-                showResults.Invoke(null, new object[] { outputs });
+                //showResults.Invoke(null, new object[] { outputs });
+                task.showResults(outputs);
             }
             catch (SocketException exc)
             {
@@ -208,12 +209,13 @@ namespace MasterSlaveApplication
                 int size=Math.Min(1024,length);
                 int read = netStream.Read(data,offset,size);
                 offset += read;
+                length -= read;
             }
             return data;
         }
-        void sendTaskAndInput(NetworkStream netStream,byte[] taskData,byte[]inputData,byte[]metainfo)
+        void sendTaskAndInput(NetworkStream netStream,byte[] taskData,byte[]inputData,byte[]metainfo,string assemblyname)
         {
-            byte[] rv = new byte[sizeof(int) + sizeof(int) + sizeof(int) + taskData.Length + inputData.Length + metainfo.Length];
+            byte[] rv = new byte[sizeof(int) + sizeof(int) + sizeof(int) + taskData.Length + inputData.Length + metainfo.Length+assemblyname.Length];
             int offset = 0;
             System.Buffer.BlockCopy(BitConverter.GetBytes((int)Header.DATASEND), 0, rv, offset, sizeof(int));
             offset += sizeof(int);
@@ -226,6 +228,8 @@ namespace MasterSlaveApplication
             System.Buffer.BlockCopy(inputData, 0, rv, offset, inputData.Length);
             offset += inputData.Length;
             System.Buffer.BlockCopy(metainfo, 0, rv, offset, metainfo.Length);
+            offset += metainfo.Length;
+            System.Buffer.BlockCopy(Encoding.UTF8.GetBytes(assemblyname), 0, rv, offset, assemblyname.Length);
             sendChunk(netStream,rv);
         }
         void sendChunk(NetworkStream netStream,byte[]data)
