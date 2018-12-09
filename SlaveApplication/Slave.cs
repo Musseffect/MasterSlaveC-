@@ -89,10 +89,14 @@ namespace SlaveApplication
             {
                 try{
                     TcpClient tcpClient = tcpListener.AcceptTcpClient();
+                    this.state = "Занят";
                     processTcpClient(tcpClient);
                 }catch(Exception exc)
                 {
                     Log(exc.Message);
+                }finally
+                {
+                    this.State="Свободен";
                 }
             }
             tcpListener.Stop();
