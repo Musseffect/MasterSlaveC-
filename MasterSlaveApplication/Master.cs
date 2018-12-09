@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -30,6 +31,8 @@ namespace MasterSlaveApplication
         }
         public void executeLocally(string taskPath, string inputPath)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             AppDomain appDomain = null;
             byte[] taskData;
             string inputString;
@@ -58,8 +61,9 @@ namespace MasterSlaveApplication
                     return;
                 }
                 object data = parseData.Invoke(null, new object[] { inputString });
-                byte[] output = (byte[])execute.Invoke(null,new object[]{data, 0, 1});
-                Log("Задание выполнено.");
+                byte[] output = (byte[])execute.Invoke(null, new object[] { data, 0, 1 });
+                sw.Stop();
+                Log("Задание выполнено. Время выполнения: "+Convert.ToString(sw.ElapsedMilliseconds*0.001)+"сек.");
                 showResults.Invoke(null, new object[] { new List<byte[]> { output } });
                 /*dynamic taskObject = Activator.CreateInstance(t);
                 taskObject.validate(BitConverter.ToString(inputData));
@@ -82,6 +86,7 @@ namespace MasterSlaveApplication
         {
             if (workers.Count == 0)
                 return;
+            Stopwatch sw = new Stopwatch();
             AppDomain appDomain = null;
             byte[] taskData;
             string inputString;
@@ -108,7 +113,7 @@ namespace MasterSlaveApplication
                 MethodInfo showResults = t.GetMethod("showResults");*/
                 if ((bool)task.validate(inputString) != true)
                 {
-                    Log("Входные данные имеют неправильный формат");
+                    throw new Exception("Входные данные имеют неправильный формат.");
                     return;
                 }
                 /*if ((bool)validate.Invoke(null, new object[] { inputString }) != true)
@@ -157,6 +162,8 @@ namespace MasterSlaveApplication
                     tcp.Close();
                     clients[i] = null;
                 }
+                sw.Stop();
+                Log("Задание выполнено. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + "сек.");
                 //showResults.Invoke(null, new object[] { outputs });
                 task.showResults(outputs);
             }
@@ -172,7 +179,6 @@ namespace MasterSlaveApplication
             catch (Exception exc)
             {
                 Log(exc.Message);
-                return;
             }
             finally
             {
