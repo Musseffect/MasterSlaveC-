@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -55,10 +56,21 @@ namespace SlaveApplication
                 return (Header)header;
             return Header.INCORRECT;
         }
+        public static IPAddress getIPAddress()
+        {
+            IPHostEntry host;
+            host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (IPAddress ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                    return ip;
+            }
+            return IPAddress.Any;
+        }
         public void Init(int port=11256)
         {
             tcpListener = new TcpListener(IPAddress.Any, port);
-            slaveIP = ((IPEndPoint)tcpListener.LocalEndpoint).Address;
+            slaveIP = getIPAddress();
             this.port=port;
         }
         public void listenTCP()
@@ -92,8 +104,9 @@ namespace SlaveApplication
             {
                 int workerNumber=0;
                 int workerCount = 0;
-                loadData(tcpClient.GetStream(), out taskData, out inputData, out workerNumber, out workerCount);
-                executeTask(tcpClient, taskData, inputData, workerNumber, workerCount);
+                string assemblyName = "";
+                loadData(tcpClient.GetStream(), out taskData, out inputData, out workerNumber, out workerCount,out assemblyName);
+                executeTask(tcpClient, taskData,assemblyName, inputData, workerNumber, workerCount);
             }
             catch (Exception exc)
             {
@@ -102,21 +115,47 @@ namespace SlaveApplication
             }
             tcpClient.Close();
         }
-        void executeTask(TcpClient tcpClient,byte[] taskData, string inputString,int workerNumber, int workersCount)
+        private static void appdomainCallback()
+        {
+            string inputString=(string)AppDomain.CurrentDomain.GetData("inputString");
+            int workerNumber=(int)AppDomain.CurrentDomain.GetData("workerNumber");
+            int workersCount=(int)AppDomain.CurrentDomain.GetData("workersCount");
+            string assemblyName = (string)AppDomain.CurrentDomain.GetData("assemblyName");
+            Assembly assm = AppDomain.CurrentDomain.Load(assemblyName);
+            Type t = assm.GetExportedTypes()[1];
+            dynamic task = Activator.CreateInstance(t); 
+            task.validate(inputString);
+            byte[] output = task.execute(task.parseData(inputString), workerNumber, workersCount);
+            AppDomain.CurrentDomain.SetData("output",output);
+        
+        }
+        void executeTask(TcpClient tcpClient,byte[] taskData,string assemblyName, string inputString,int workerNumber, int workersCount)
         {
             AppDomain appDomain = null;
+            File.WriteAllBytes(AppDomain.CurrentDomain.BaseDirectory+assemblyName+".dll",taskData);
             try
             {
-                appDomain = AppDomain.CreateDomain("TaskDomain");
-                Assembly assm = appDomain.Load(taskData);
-                Type t = assm.GetExportedTypes()[1];
+                AppDomainSetup setup = new AppDomainSetup();
+                setup.ApplicationBase = AppDomain.CurrentDomain.BaseDirectory;
+                setup.LoaderOptimization = LoaderOptimization.MultiDomainHost;
+                appDomain = AppDomain.CreateDomain("TaskDomain",null,setup);
+                appDomain.SetData("inputString",inputString);
+                appDomain.SetData("workerNumber",workerNumber);
+                appDomain.SetData("workersCount",workersCount);
+                appDomain.SetData("assemblyName", assemblyName);
+                appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainCallback));
+                //appDomain.DoCallBack(()=> assm = AppDomain.CurrentDomain.Load(assemblyName));
+                /*Type t = assm.GetExportedTypes()[1];
                 MethodInfo validate = t.GetMethod("validate");
                 MethodInfo execute = t.GetMethod("execute");
                 MethodInfo parseData = t.GetMethod("parseData");
                 MethodInfo showResults = t.GetMethod("showResults");
                 validate.Invoke(null, new object[] { inputString });
                 object data = parseData.Invoke(null, new object[] { inputString });
-                byte[] output = (byte[])execute.Invoke(null, new object[] { data, workerNumber, workersCount });
+                byte[] output = (byte[])execute.Invoke(null, new object[] { data, workerNumber, workersCount });*/
+                //task.validate(inputString);
+                //byte[] output = task.execute(task.parseData(inputString), workerNumber, workersCount);
+                byte[] output = (byte[])appDomain.GetData("output");
                 Log("Задание выполнено.");
                 sendOutput(tcpClient.GetStream(),Header.DATASEND, output);
                 Log("Результаты отправлены назад.");
@@ -147,10 +186,10 @@ namespace SlaveApplication
             int offset = 0;
             System.Buffer.BlockCopy(BitConverter.GetBytes((int)header), 0, message, offset, sizeof(int));
             offset += sizeof(int);
-            System.Buffer.BlockCopy(BitConverter.GetBytes(data.Length), 0, message, offset, sizeof(int));
+            System.Buffer.BlockCopy(data, 0, message, offset, data.Length);
             sendChunk(netStream,message);
         }
-        public void loadData(NetworkStream netStream, out byte[] taskData, out string inputData, out int workerNumber, out int workerCount)
+        public void loadData(NetworkStream netStream, out byte[] taskData, out string inputData, out int workerNumber, out int workerCount,out string assemblyName)
         {
             byte[] data = readChunk(netStream);
             int header=BitConverter.ToInt32(data,0);
@@ -159,10 +198,16 @@ namespace SlaveApplication
             int taskSize=BitConverter.ToInt32(data,sizeof(int));
             int inputSize = BitConverter.ToInt32(data, 2*sizeof(int));
             int metaSize=sizeof(int)*2;
-            taskData=new ArraySegment<byte>(data,sizeof(int)*3,taskSize).ToArray();
-            inputData=Encoding.UTF8.GetString(data,3*sizeof(int)+taskSize,inputSize);
-            workerNumber = BitConverter.ToInt32(data, 3*sizeof(int)+taskSize+inputSize);
-            workerCount = BitConverter.ToInt32(data, 4 * sizeof(int) + taskSize + inputSize);
+            int offset = sizeof(int) * 3;
+            taskData=new ArraySegment<byte>(data,offset,taskSize).ToArray();
+            offset+=taskSize;
+            inputData=Encoding.UTF8.GetString(data,offset,inputSize);
+            offset+=inputSize;
+            workerNumber = BitConverter.ToInt32(data, offset);
+            offset+=sizeof(int);
+            workerCount = BitConverter.ToInt32(data, offset);
+            offset+=sizeof(int);
+            assemblyName= Encoding.UTF8.GetString(data,5*sizeof(int)+taskSize+inputSize,data.Length-offset);
         }
         byte[] readChunk(NetworkStream netStream)
         {
@@ -177,6 +222,7 @@ namespace SlaveApplication
                 int size=Math.Min(length, chunkSize);
                 int read=netStream.Read(buffer, offset, size);
                 offset += read;
+                length -= read;
             }
             return buffer;
         }

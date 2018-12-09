@@ -44,13 +44,14 @@ namespace SlaveApplication
         Thread tcpThread;
         public MainWindow()
         {
-            logMessages = new ObservableCollection<String>() {"Программа запущена"};
+            logMessages = new ObservableCollection<String>() {};
             slave=new Slave();
             InitializeComponent();
             slave.Log+=LogHandler;
             slave.ExceptionRestart+=ExceptionHandler;
             RunSlave();
             DataContext = this;
+            Log("Программа запущена");
         }
         private void RunSlave()
         {
@@ -75,7 +76,7 @@ namespace SlaveApplication
         }
         private void Log(string message)
         {
-            logMessages.Insert(0, DateTime.Now.ToString("[h:mm:tt] ") + message);
+            logMessages.Insert(0, DateTime.Now.ToString("[hh:mm:ss] ") + message);
             for (int i = logMessages.Count - 1; i > 11; i--)
                 logMessages.RemoveAt(i);
         }
