@@ -126,7 +126,7 @@ namespace MasterSlaveApplication
             master = new Master();
             logMessages = new ObservableCollection<String>() { };
             inputFileName = "G:\\Users\\Misha\\Documents\\Visual Studio 2013\\Projects\\MasterSlaveApplication\\MasterSlaveApplication\\bin\\Debug\\task.txt";
-            taskFileName = "G:\\Users\\Misha\\Documents\\Visual Studio 2013\\Projects\\MasterSlaveApplication\\MasterSlaveApplication\\bin\\Debug\\FractalRenderTask.dll";
+            taskFileName = "G:\\Users\\Misha\\Documents\\Visual Studio 2013\\Projects\\MasterSlaveApplication\\MasterSlaveApplication\\bin\\Debug\\SimpleTask.dll";
             master.Log += LogHandler;
             InitializeComponent();
             DataContext = this;

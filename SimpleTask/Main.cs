@@ -22,9 +22,13 @@ namespace SimpleTask
         //etc
         public int numbersCount;
     }
-    public static class Task
+    [Serializable]
+    public class Task
     {
-        public static byte[] execute(TaskData taskData, int workerNumber, int workersCount)
+        public Task()
+        { 
+        }
+        public byte[] execute(TaskData taskData, int workerNumber, int workersCount)
         {
             long sum = 0;
             for (int i = workerNumber; i < taskData.numbersCount; i += workersCount)
@@ -33,12 +37,12 @@ namespace SimpleTask
             }
             return BitConverter.GetBytes(sum);
         }
-        public static bool validate(string data)
+        public bool validate(string data)
         {
             int result;
             return Int32.TryParse(data, out result);
         }
-        public static TaskData parseData(string serializedData)
+        public TaskData parseData(string serializedData)
         {
             TaskData taskData = new TaskData();
             try
@@ -55,7 +59,7 @@ namespace SimpleTask
             }
             return taskData;
         }
-        public static void showResults(List<byte[]> dataArrays)//ascending order of workerNumbers
+        public void showResults(List<byte[]> dataArrays)//ascending order of workerNumbers
         {
             long sum = 0;
             foreach (byte[] data in dataArrays)
