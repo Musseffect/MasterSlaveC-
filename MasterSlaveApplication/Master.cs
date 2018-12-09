@@ -142,6 +142,7 @@ namespace MasterSlaveApplication
             if (workers.Count == 0)
                 return;
             Stopwatch sw = new Stopwatch();
+            sw.Start();
             AppDomain appDomain = null;
             byte[] taskData;
             string inputString;
@@ -221,6 +222,7 @@ namespace MasterSlaveApplication
                     tcp.Close();
                     clients[i] = null;
                 }
+                sw.Stop();
                 Log("Задание выполнено. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + " сек.");
                 appDomain.SetData("output", outputs);
                 appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainShowOutputCallback));

@@ -111,6 +111,7 @@ namespace SlaveApplication
                 int workerCount = 0;
                 string assemblyName = "";
                 Stopwatch sw = new Stopwatch();
+                sw.Start();
                 loadData(tcpClient.GetStream(), out taskData, out inputData, out workerNumber, out workerCount,out assemblyName);
                 executeTask(tcpClient, taskData,assemblyName, inputData, workerNumber, workerCount);
                 sw.Stop();
