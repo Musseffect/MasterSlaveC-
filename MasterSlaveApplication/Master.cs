@@ -29,6 +29,28 @@ namespace MasterSlaveApplication
         {
             this.port = port;
         }
+        private static void appdomainCallback()
+        {
+            string inputString = (string)AppDomain.CurrentDomain.GetData("inputString");
+            int workerNumber = (int)AppDomain.CurrentDomain.GetData("workerNumber");
+            int workersCount = (int)AppDomain.CurrentDomain.GetData("workersCount");
+            byte[] assembly = (byte[])AppDomain.CurrentDomain.GetData("taskData");
+            Assembly assm = AppDomain.CurrentDomain.Load(assembly);
+            Type t = assm.GetExportedTypes()[0];
+            dynamic task = Activator.CreateInstance(t);
+            task.validate(inputString);
+            byte[] output = task.execute(task.parseData(inputString), workerNumber, workersCount);
+            AppDomain.CurrentDomain.SetData("output", output);
+            AppDomain.CurrentDomain.SetData("task", task);
+            string assemblyName = assm.GetName().Name;
+            AppDomain.CurrentDomain.SetData("assemblyName", assemblyName);
+        }
+        private static void appdomainShowOutputCallback()
+        {
+            List<byte[]> output=(List<byte[]>)AppDomain.CurrentDomain.GetData("output");
+            dynamic task = AppDomain.CurrentDomain.GetData("task");
+            task.showResults(output );
+        }
         public void executeLocally(string taskPath, string inputPath)
         {
             Stopwatch sw = new Stopwatch();
@@ -48,23 +70,44 @@ namespace MasterSlaveApplication
             }
             try
             {
-                appDomain = AppDomain.CreateDomain("TaskDomain");
+                AppDomainSetup setup = new AppDomainSetup();
+                setup.ApplicationBase = AppDomain.CurrentDomain.BaseDirectory;
+                setup.LoaderOptimization = LoaderOptimization.MultiDomainHost;
+                appDomain = AppDomain.CreateDomain("TaskDomain", null, setup);
+                appDomain.SetData("inputString", inputString);
+                appDomain.SetData("workerNumber", 0);
+                appDomain.SetData("workersCount", 1);
+                appDomain.SetData("taskData", taskData);
+                appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainCallback));
+                byte[] output = (byte[])appDomain.GetData("output");
+                sw.Stop();
+                Log("Задание выполнено. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + "сек.");
+                appDomain.SetData("output", new List<byte[]> { output});
+                appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainShowOutputCallback));
+                /*appDomain = AppDomain.CreateDomain("TaskDomain");
                 Assembly assm = appDomain.Load(taskData);
+                string assemblyName = assm.GetName().Name;
                 Type t = assm.GetExportedTypes()[1];
+                dynamic task = Activator.CreateInstance(t);
+                task.validate(inputString);
+                byte[] output = (byte[])task.execute(task.parseData(inputString), 0, 1);
+                sw.Stop();
+                Log("Задание выполнено. Время выполнения: "+Convert.ToString(sw.ElapsedMilliseconds*0.001)+"сек.");
+                task.showResults(new List<byte[]> {output});*/
+
+
+                //appDomain.DoCallBack(()=> assm = AppDomain.CurrentDomain.Load(assemblyName));
+                /*Type t = assm.GetExportedTypes()[1];
                 MethodInfo validate = t.GetMethod("validate");
                 MethodInfo execute = t.GetMethod("execute");
                 MethodInfo parseData = t.GetMethod("parseData");
                 MethodInfo showResults = t.GetMethod("showResults");
-                if ((bool)validate.Invoke(null, new object[] { inputString }) != true)
-                {
-                    Log("Входные данные имеют неправильный формат");
-                    return;
-                }
+                validate.Invoke(null, new object[] { inputString });
                 object data = parseData.Invoke(null, new object[] { inputString });
-                byte[] output = (byte[])execute.Invoke(null, new object[] { data, 0, 1 });
-                sw.Stop();
-                Log("Задание выполнено. Время выполнения: "+Convert.ToString(sw.ElapsedMilliseconds*0.001)+"сек.");
-                showResults.Invoke(null, new object[] { new List<byte[]> { output } });
+                byte[] output = (byte[])execute.Invoke(null, new object[] { data, workerNumber, workersCount });*/
+                //task.validate(inputString);
+                //byte[] output = task.execute(task.parseData(inputString), workerNumber, workersCount);
+
                 /*dynamic taskObject = Activator.CreateInstance(t);
                 taskObject.validate(BitConverter.ToString(inputData));
                 byte[] output = taskObject.execute(taskObject.parseData(BitConverter.ToString(inputData)), 0, 1);
@@ -111,11 +154,7 @@ namespace MasterSlaveApplication
                 dynamic task = Activator.CreateInstance(t);
                 /*MethodInfo validate = t.GetMethod("validate");
                 MethodInfo showResults = t.GetMethod("showResults");*/
-                if ((bool)task.validate(inputString) != true)
-                {
-                    throw new Exception("Входные данные имеют неправильный формат.");
-                    return;
-                }
+                task.validate(inputString);
                 /*if ((bool)validate.Invoke(null, new object[] { inputString }) != true)
                 {
                     Log("Входные данные имеют неправильный формат");
@@ -212,7 +251,7 @@ namespace MasterSlaveApplication
             int offset = 0;
             while (length > 0)
             {
-                int size=Math.Min(1024,length);
+                int size = Math.Min(chunkSize, length);
                 int read = netStream.Read(data,offset,size);
                 offset += read;
                 length -= read;

@@ -7,21 +7,6 @@ using System.Windows;
 
 namespace SimpleTask
 {
-    public class TaskData
-    {
-        //camera position
-        //camera direction
-        //camera up vector
-        //camera dof
-        //camera aa
-        //camera mod - linear or spherical perspective - ortho
-        //camera fov
-        //Mandelbox params
-        //Scale
-        //bla bla bla
-        //etc
-        public int numbersCount;
-    }
     [Serializable]
     public class Task
     {
@@ -39,8 +24,8 @@ namespace SimpleTask
         }
         public bool validate(string data)
         {
-            int result;
-            return Int32.TryParse(data, out result);
+            int result=Int32.Parse(data);
+            return true;
         }
         public TaskData parseData(string serializedData)
         {
@@ -68,6 +53,24 @@ namespace SimpleTask
                 sum += number;
             }
             MessageBox.Show("Результат: " + sum.ToString(), "Задание выполнено");
+        }
+    }
+    public class TaskData
+    {
+        //camera position
+        //camera direction
+        //camera up vector
+        //camera dof
+        //camera aa
+        //camera mod - linear or spherical perspective - ortho
+        //camera fov
+        //Mandelbox params
+        //Scale
+        //bla bla bla
+        //etc
+        public int numbersCount;
+        public TaskData()
+        {
         }
     }
 }

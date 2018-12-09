@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -105,8 +106,11 @@ namespace SlaveApplication
                 int workerNumber=0;
                 int workerCount = 0;
                 string assemblyName = "";
+                Stopwatch sw = new Stopwatch();
                 loadData(tcpClient.GetStream(), out taskData, out inputData, out workerNumber, out workerCount,out assemblyName);
                 executeTask(tcpClient, taskData,assemblyName, inputData, workerNumber, workerCount);
+                sw.Stop();
+                Log("Время выполнения: "+(sw.ElapsedMilliseconds*0.001)+"сек.");
             }
             catch (Exception exc)
             {
@@ -122,7 +126,7 @@ namespace SlaveApplication
             int workersCount=(int)AppDomain.CurrentDomain.GetData("workersCount");
             string assemblyName = (string)AppDomain.CurrentDomain.GetData("assemblyName");
             Assembly assm = AppDomain.CurrentDomain.Load(assemblyName);
-            Type t = assm.GetExportedTypes()[1];
+            Type t = assm.GetExportedTypes()[0];
             dynamic task = Activator.CreateInstance(t); 
             task.validate(inputString);
             byte[] output = task.execute(task.parseData(inputString), workerNumber, workersCount);
