@@ -110,7 +110,7 @@ namespace SlaveApplication
                 loadData(tcpClient.GetStream(), out taskData, out inputData, out workerNumber, out workerCount,out assemblyName);
                 executeTask(tcpClient, taskData,assemblyName, inputData, workerNumber, workerCount);
                 sw.Stop();
-                Log("Время выполнения: "+(sw.ElapsedMilliseconds*0.001)+"сек.");
+                Log("Время выполнения: "+Convert.ToString(sw.ElapsedMilliseconds*0.001)+"сек.");
             }
             catch (Exception exc)
             {

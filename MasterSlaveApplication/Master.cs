@@ -45,6 +45,18 @@ namespace MasterSlaveApplication
             string assemblyName = assm.GetName().Name;
             AppDomain.CurrentDomain.SetData("assemblyName", assemblyName);
         }
+        private static void appdomainValidateCallback()
+        {
+            string inputString = (string)AppDomain.CurrentDomain.GetData("inputString");
+            byte[] assembly = (byte[])AppDomain.CurrentDomain.GetData("taskData");
+            Assembly assm = AppDomain.CurrentDomain.Load(assembly);
+            Type t = assm.GetExportedTypes()[0];
+            dynamic task = Activator.CreateInstance(t);
+            task.validate(inputString);
+            AppDomain.CurrentDomain.SetData("task", task);
+            string assemblyName = assm.GetName().Name;
+            AppDomain.CurrentDomain.SetData("assemblyName", assemblyName);
+        }
         private static void appdomainShowOutputCallback()
         {
             List<byte[]> output=(List<byte[]>)AppDomain.CurrentDomain.GetData("output");
@@ -81,7 +93,7 @@ namespace MasterSlaveApplication
                 appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainCallback));
                 byte[] output = (byte[])appDomain.GetData("output");
                 sw.Stop();
-                Log("Задание выполнено. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + "сек.");
+                Log("Задание выполнено. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + " сек.");
                 appDomain.SetData("output", new List<byte[]> { output});
                 appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainShowOutputCallback));
                 /*appDomain = AppDomain.CreateDomain("TaskDomain");
@@ -147,14 +159,22 @@ namespace MasterSlaveApplication
             }
             try
             {
-                appDomain = AppDomain.CreateDomain("TaskDomain");
+                AppDomainSetup setup = new AppDomainSetup();
+                setup.ApplicationBase = AppDomain.CurrentDomain.BaseDirectory;
+                setup.LoaderOptimization = LoaderOptimization.MultiDomainHost;
+                appDomain = AppDomain.CreateDomain("TaskDomain", null, setup);
+                appDomain.SetData("inputString", inputString);
+                appDomain.SetData("taskData", taskData);
+                appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainValidateCallback));
+                string assemblyName = (string)appDomain.GetData("assemblyName");
+
+
+               /* appDomain = AppDomain.CreateDomain("TaskDomain");
                 Assembly assm = appDomain.Load(taskData);
                 string assemblyName=assm.GetName().Name;
                 Type t = assm.GetExportedTypes()[1];
-                dynamic task = Activator.CreateInstance(t);
-                /*MethodInfo validate = t.GetMethod("validate");
-                MethodInfo showResults = t.GetMethod("showResults");*/
-                task.validate(inputString);
+                dynamic task = Activator.CreateInstance(t);*/
+                //task.validate(inputString);
                 /*if ((bool)validate.Invoke(null, new object[] { inputString }) != true)
                 {
                     Log("Входные данные имеют неправильный формат");
@@ -201,10 +221,12 @@ namespace MasterSlaveApplication
                     tcp.Close();
                     clients[i] = null;
                 }
-                sw.Stop();
-                Log("Задание выполнено. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + "сек.");
-                //showResults.Invoke(null, new object[] { outputs });
-                task.showResults(outputs);
+                Log("Задание выполнено. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + " сек.");
+                appDomain.SetData("output", outputs);
+                appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainShowOutputCallback));
+                //sw.Stop();
+                //Log("Задание выполнено. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + "сек.");
+                //task.showResults(outputs);
             }
             catch (SocketException exc)
             {
