@@ -88,7 +88,7 @@ namespace FractalRenderTask
         {
             float t = 0.0f;
             float epsilon = data.epsilon;
-            for (int i = 0; i < 68; i++)
+            for (int i = 0; i < data.rayIterations; i++)
             {
                 Vector3 pos = ro + rd * t;
                 //mapSphereToCube(pos_t);
