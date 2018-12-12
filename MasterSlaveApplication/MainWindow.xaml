@@ -52,7 +52,7 @@
                 <Image Source="folder-outline-filled.png"/>
             </Button>
         </Grid>
-        <ListView ItemsSource="{Binding Path=Slaves}"  x:Name="ServerListView" Height="Auto" Margin="10,8" Grid.Row="1" HorizontalContentAlignment="Stretch">
+        <ListView ItemsSource="{Binding Path=Slaves}" x:Name="ServerListView" Height="Auto" Margin="10,8" Grid.Row="1" HorizontalContentAlignment="Stretch">
             <ListView.View>
                 <GridView>
                     <GridView.ColumnHeaderContainerStyle>

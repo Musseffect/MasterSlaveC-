@@ -1,0 +1,41 @@
+{
+  "mandelbox": {
+    "foldingLimit": 1,
+    "minRadius2": 0.25,
+    "scale": -1.5,
+    "foldingValue": 2,
+    "sphereFoldOffset": {
+      "X": 0,
+      "Y": 0,
+      "Z": 0
+    },
+    "fixedRadius2": 1,
+    "iterations": 30,
+    "bailout": 10240
+  },
+  "camera": {
+    "pos": {
+      "X": 3,
+      "Y": 3,
+      "Z": 3
+    },
+    "dir": {
+      "X": -1,
+      "Y": -1,
+      "Z": -1
+    },
+    "up": {
+      "X": 0,
+      "Y": 1,
+      "Z": 0
+    },
+    "aperture": 0,
+    "focalDist": 0,
+    "fov": 90
+  },
+  "epsilon": 0.001,
+  "scaleStep": 1,
+  "width": 128,
+  "height": 72,
+  "rayIterations": 60
+}
