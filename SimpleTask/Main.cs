@@ -15,8 +15,8 @@ namespace SimpleTask
         }
         public byte[] execute(TaskData taskData, int workerNumber, int workersCount)
         {
-            long sum = 0;
-            for (int i = workerNumber; i < taskData.numbersCount; i += workersCount)
+            ulong sum = 0;
+            for (ulong i = (ulong)workerNumber; i < taskData.numbersCount; i += (ulong)workersCount)
             {
                 sum += i;
             }
@@ -24,7 +24,7 @@ namespace SimpleTask
         }
         public bool validate(string data)
         {
-            int result=Int32.Parse(data);
+            ulong result=UInt64.Parse(data);
             return true;
         }
         public TaskData parseData(string serializedData)
@@ -32,7 +32,7 @@ namespace SimpleTask
             TaskData taskData = new TaskData();
             try
             {
-                taskData.numbersCount = Int32.Parse(serializedData);
+                taskData.numbersCount = UInt64.Parse(serializedData);
             }
             catch (System.FormatException exc)
             {
@@ -46,10 +46,10 @@ namespace SimpleTask
         }
         public void showResults(List<byte[]> dataArrays)//ascending order of workerNumbers
         {
-            long sum = 0;
+            ulong sum = 0;
             foreach (byte[] data in dataArrays)
             {
-                long number = BitConverter.ToInt64(data, 0);
+                ulong number = BitConverter.ToUInt64(data, 0);
                 sum += number;
             }
             MessageBox.Show("Результат: " + sum.ToString(), "Задание выполнено");
@@ -68,7 +68,7 @@ namespace SimpleTask
         //Scale
         //bla bla bla
         //etc
-        public int numbersCount;
+        public ulong numbersCount;
         public TaskData()
         {
         }

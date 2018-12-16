@@ -140,12 +140,15 @@ namespace FractalRenderTask
         public byte[] execute(TaskData taskData, int workerNumber, int workersCount)
         {
             int pixels = taskData.width * taskData.height;
-            int tileSize = (int)Math.Ceiling((float)(pixels - workerNumber) / (float)workersCount);
+            //int tileSize = (int)Math.Ceiling((float)(pixels - workerNumber) / (float)workersCount);
+            int sz = (int)Math.Ceiling((float)pixels / (float)workersCount);
+            int index = (workerNumber) * sz;
+            int tileSize = Math.Min(pixels - index, sz);
             byte[] pixelColors = new byte[3 * tileSize];
             Mandelbox mandelbox = new Mandelbox(taskData.mandelbox);
             for (int i = workerNumber,j=0; i < pixels&&j<tileSize; i += workersCount,j++)
             {
-                Vector3 res = getColor(mandelbox, taskData, i % taskData.width, i / taskData.width, taskData.width, taskData.height);
+                Vector3 res = getColor(mandelbox, taskData, (index + j) % taskData.width, (index + j) / taskData.width, taskData.width, taskData.height);
                 res *= 255.0f;
                 res.X = Math.Min(Math.Max(res.X, 0.0f), 255.0f);
                 res.Y = Math.Min(Math.Max(res.Y, 0.0f), 255.0f);

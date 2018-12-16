@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 
@@ -93,7 +94,8 @@ namespace MasterSlaveApplication
                 appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainCallback));
                 byte[] output = (byte[])appDomain.GetData("output");
                 sw.Stop();
-                Log("Задание выполнено. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + " сек.");
+                Thread.Sleep(20000);
+                Log("Задание выполнено локально. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + " сек.");
                 appDomain.SetData("output", new List<byte[]> { output});
                 appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainShowOutputCallback));
                 /*appDomain = AppDomain.CreateDomain("TaskDomain");
@@ -223,7 +225,7 @@ namespace MasterSlaveApplication
                     clients[i] = null;
                 }
                 sw.Stop();
-                Log("Задание выполнено. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + " сек.");
+                Log("Задание выполнено на работниках. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + " сек.");
                 appDomain.SetData("output", outputs);
                 appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainShowOutputCallback));
                 //sw.Stop();
