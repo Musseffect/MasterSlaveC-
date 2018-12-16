@@ -150,9 +150,9 @@ namespace FractalRenderTask
                 res.X = Math.Min(Math.Max(res.X, 0.0f), 255.0f);
                 res.Y = Math.Min(Math.Max(res.Y, 0.0f), 255.0f);
                 res.Z = Math.Min(Math.Max(res.Z, 0.0f), 255.0f);
-                pixelColors[i * 3] = (byte)(res.X);
-                pixelColors[i * 3 + 1] = (byte)(res.Y);
-                pixelColors[i * 3 + 2] = (byte)(res.Z);
+                pixelColors[j * 3] = (byte)(res.X);
+                pixelColors[j * 3 + 1] = (byte)(res.Y);
+                pixelColors[j * 3 + 2] = (byte)(res.Z);
             }
             return pixelColors;
         }
