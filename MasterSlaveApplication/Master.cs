@@ -93,40 +93,11 @@ namespace MasterSlaveApplication
                 appDomain.SetData("taskData", taskData);
                 appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainCallback));
                 byte[] output = (byte[])appDomain.GetData("output");
-                sw.Stop();
                 Thread.Sleep(20000);
+                sw.Stop();
                 Log("Задание выполнено локально. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + " сек.");
                 appDomain.SetData("output", new List<byte[]> { output});
                 appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainShowOutputCallback));
-                /*appDomain = AppDomain.CreateDomain("TaskDomain");
-                Assembly assm = appDomain.Load(taskData);
-                string assemblyName = assm.GetName().Name;
-                Type t = assm.GetExportedTypes()[1];
-                dynamic task = Activator.CreateInstance(t);
-                task.validate(inputString);
-                byte[] output = (byte[])task.execute(task.parseData(inputString), 0, 1);
-                sw.Stop();
-                Log("Задание выполнено. Время выполнения: "+Convert.ToString(sw.ElapsedMilliseconds*0.001)+"сек.");
-                task.showResults(new List<byte[]> {output});*/
-
-
-                //appDomain.DoCallBack(()=> assm = AppDomain.CurrentDomain.Load(assemblyName));
-                /*Type t = assm.GetExportedTypes()[1];
-                MethodInfo validate = t.GetMethod("validate");
-                MethodInfo execute = t.GetMethod("execute");
-                MethodInfo parseData = t.GetMethod("parseData");
-                MethodInfo showResults = t.GetMethod("showResults");
-                validate.Invoke(null, new object[] { inputString });
-                object data = parseData.Invoke(null, new object[] { inputString });
-                byte[] output = (byte[])execute.Invoke(null, new object[] { data, workerNumber, workersCount });*/
-                //task.validate(inputString);
-                //byte[] output = task.execute(task.parseData(inputString), workerNumber, workersCount);
-
-                /*dynamic taskObject = Activator.CreateInstance(t);
-                taskObject.validate(BitConverter.ToString(inputData));
-                byte[] output = taskObject.execute(taskObject.parseData(BitConverter.ToString(inputData)), 0, 1);
-                Log("Задание выполнено.");
-                taskObject.showResults(new List<byte[]> { output});*/
             }
             catch (Exception exc)
             {
