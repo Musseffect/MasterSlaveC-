@@ -84,10 +84,28 @@ namespace FractalRenderTask
         public Task()
         {
         }
+        public float traceBox(Vector3 ro, Vector3 rd,
+                          Vector3 boxSize)
+        {
+            Vector3 m = new Vector3(1.0f/rd.X,1.0f/rd.Y,1.0f/rd.Z);
+            Vector3 n = m * ro;
+            Vector3 k = (new Vector3(Math.Abs(m.X),Math.Abs(m.Y),Math.Abs(m.Z))) * boxSize;
+
+            Vector3 t1 = -n - k;
+            Vector3 t2 = -n + k;
+
+            float tN = Math.Max(Math.Max(t1.X, t1.Y), t1.Z);
+            float tF = Math.Min(Math.Min(t2.X, t2.Y), t2.Z);
+
+            if (tN > tF || tF < 0.0) return -1.0f; // no intersection
+
+            return tN;
+        }
         public float trace(Mandelbox mandelbox, TaskData data, Vector3 ro, Vector3 rd, ref Vector3 normal)
         {
             float t = 0.0f;
-            float epsilon = data.epsilon;
+            t=traceBox(ro,rd,new Vector3(data.boxSize));
+            float epsilon = data.epsilon * (t + 1.0f);
             for (int i = 0; i < data.rayIterations; i++)
             {
                 Vector3 pos = ro + rd * t;
@@ -108,8 +126,8 @@ namespace FractalRenderTask
                     return t;
                 }
                 dp *= data.scaleStep;
-                epsilon += epsilon*dp;
-                t += dp ;
+                t += dp;
+                epsilon += data.epsilon * (t + 1.0f);
             }
             return -1.0f;
         }
@@ -227,5 +245,6 @@ namespace FractalRenderTask
         public MandelboxData mandelbox;
         public int width;
         public int height;
+        public float boxSize;
     }
 }

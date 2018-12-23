@@ -58,6 +58,14 @@ namespace MasterSlaveApplication
             string assemblyName = assm.GetName().Name;
             AppDomain.CurrentDomain.SetData("assemblyName", assemblyName);
         }
+        private static void appdomainExecuteCallback()
+        {
+            string inputString = (string)AppDomain.CurrentDomain.GetData("inputString");
+            dynamic task = AppDomain.CurrentDomain.GetData("task");
+            int workersCount = (int)AppDomain.CurrentDomain.GetData("workersCount");
+            byte[] output = task.execute(task.parseData(inputString), workersCount - 1, workersCount);
+            AppDomain.CurrentDomain.SetData("output", output);
+        }
         private static void appdomainShowOutputCallback()
         {
             List<byte[]> output=(List<byte[]>)AppDomain.CurrentDomain.GetData("output");
@@ -93,7 +101,7 @@ namespace MasterSlaveApplication
                 appDomain.SetData("taskData", taskData);
                 appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainCallback));
                 byte[] output = (byte[])appDomain.GetData("output");
-                Thread.Sleep(20000);
+                //Thread.Sleep(20000);
                 sw.Stop();
                 Log("Задание выполнено локально. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + " сек.");
                 appDomain.SetData("output", new List<byte[]> { output});
@@ -139,6 +147,7 @@ namespace MasterSlaveApplication
                 appDomain = AppDomain.CreateDomain("TaskDomain", null, setup);
                 appDomain.SetData("inputString", inputString);
                 appDomain.SetData("taskData", taskData);
+                appDomain.SetData("workersCount", workers.Count+1);
                 appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainValidateCallback));
                 string assemblyName = (string)appDomain.GetData("assemblyName");
 
@@ -170,7 +179,7 @@ namespace MasterSlaveApplication
                         var writer = new BinaryWriter(stream);
 
                         writer.Write(i);
-                        writer.Write(workers.Count);
+                        writer.Write(workers.Count+1);
 
                         writer.Close();
                         metainfo = stream.ToArray();
@@ -179,6 +188,7 @@ namespace MasterSlaveApplication
                     clients.Add(tcp);
                     i++;
                 }
+                appDomain.DoCallBack(new CrossAppDomainDelegate(appdomainExecuteCallback));
                 List<byte[]> outputs = new List<byte[]>();
                 for (i = 0; i < clients.Count; i++)
                 {
@@ -195,6 +205,8 @@ namespace MasterSlaveApplication
                     tcp.Close();
                     clients[i] = null;
                 }
+                byte[] outputArray = (byte[])appDomain.GetData("output");
+                outputs.Add(outputArray);
                 sw.Stop();
                 Log("Задание выполнено на работниках. Время выполнения: " + Convert.ToString(sw.ElapsedMilliseconds * 0.001) + " сек.");
                 appDomain.SetData("output", outputs);

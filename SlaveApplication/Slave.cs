@@ -89,7 +89,7 @@ namespace SlaveApplication
             {
                 try{
                     TcpClient tcpClient = tcpListener.AcceptTcpClient();
-                    this.state = "Занят";
+                    this.State = "Занят";
                     processTcpClient(tcpClient);
                 }catch(Exception exc)
                 {
