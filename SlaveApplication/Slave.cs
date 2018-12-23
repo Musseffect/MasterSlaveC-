@@ -28,7 +28,11 @@ namespace SlaveApplication
         public String State
         {
             get { return state; }
-            set { state = value; }
+            set
+            {
+                state = value;
+                OnPropertyChanged("State");
+            }
         }
         public string IP
         {
