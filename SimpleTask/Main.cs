@@ -57,17 +57,6 @@ namespace SimpleTask
     }
     public class TaskData
     {
-        //camera position
-        //camera direction
-        //camera up vector
-        //camera dof
-        //camera aa
-        //camera mod - linear or spherical perspective - ortho
-        //camera fov
-        //Mandelbox params
-        //Scale
-        //bla bla bla
-        //etc
         public ulong numbersCount;
         public TaskData()
         {
